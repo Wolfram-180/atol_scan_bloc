@@ -86,8 +86,9 @@ class MainScreen extends StatelessWidget {
     return Scaffold(
       body: BlocConsumer<ScanBloc, ScanState>(
         listener: (context, state) {
-          if (state is ScanInitial) {
-            focusNode.requestFocus();
+          if (state is ScanResult) {
+            focusNode
+                .requestFocus(); // Ensures the focus is reset after a scan.
           }
         },
         builder: (context, state) {
@@ -100,6 +101,7 @@ class MainScreen extends StatelessWidget {
               if (event is KeyUpEvent) {
                 switch (event.logicalKey.keyLabel.toUpperCase()) {
                   case 'F11':
+                    // Potentially trigger a StartScan event here
                     break;
                   case 'ENTER':
                     context.read<ScanBloc>().add(EndScan());
@@ -107,26 +109,23 @@ class MainScreen extends StatelessWidget {
                 }
               }
             },
-            child: mainScreenWidget(state),
+            child: Center(
+              child: state is ScanResult
+                  ? Text(
+                      state.scannedCode,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 22),
+                      textAlign: TextAlign.center,
+                    )
+                  : const Text(
+                      'Froza ATOL test:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+            ),
           );
         },
       ),
     );
   }
-}
-
-Widget mainScreenWidget(ScanState state) {
-  return Center(
-    child: state is ScanResult
-        ? Text(
-            state.scannedCode,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 22),
-            textAlign: TextAlign.center,
-          )
-        : const Text(
-            'Froza ATOL test:',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
-          ),
-  );
 }
