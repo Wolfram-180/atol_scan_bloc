@@ -1,1 +1,1 @@
-Using Атол scanner with Bloc
+Using Атол scanner (Smart Slim Plus) with BLoC state management
