@@ -1,7 +1,10 @@
+
+/*
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:rxdart/rxdart.dart';
 
 // Events
 abstract class ScanEvent {}
@@ -27,6 +30,7 @@ class ScanResult extends ScanState {
 
 // Bloc
 class ScanBloc extends Bloc<ScanEvent, ScanState> {
+  final BehaviorSubject<String> _subject = BehaviorSubject();
   final StringBuffer _chars = StringBuffer();
 
   ScanBloc() : super(ScanInitial()) {
@@ -49,6 +53,7 @@ class ScanBloc extends Bloc<ScanEvent, ScanState> {
 
   @override
   Future<void> close() {
+    _subject.close();
     return super.close();
   }
 }
@@ -82,50 +87,49 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final focusNode = FocusNode();
+    focusNode.requestFocus();
 
     return Scaffold(
-      body: BlocConsumer<ScanBloc, ScanState>(
-        listener: (context, state) {
-          if (state is ScanResult) {
-            focusNode
-                .requestFocus(); // Ensures the focus is reset after a scan.
+      body: KeyboardListener(
+        focusNode: focusNode,
+        onKeyEvent: (KeyEvent event) {
+          if (event is KeyDownEvent) {
+            context.read<ScanBloc>().add(KeyPressed(event));
+          }
+          if (event is KeyUpEvent) {
+            switch (event.logicalKey.keyLabel.toUpperCase()) {
+              case 'F11': // This could be used for start scan, if needed
+                break;
+              case 'ENTER':
+                context.read<ScanBloc>().add(EndScan());
+                break;
+            }
           }
         },
-        builder: (context, state) {
-          return KeyboardListener(
-            focusNode: focusNode,
-            onKeyEvent: (KeyEvent event) {
-              if (event is KeyDownEvent) {
-                context.read<ScanBloc>().add(KeyPressed(event));
-              }
-              if (event is KeyUpEvent) {
-                switch (event.logicalKey.keyLabel.toUpperCase()) {
-                  case 'F11':
-                    // Potentially trigger a StartScan event here
-                    break;
-                  case 'ENTER':
-                    context.read<ScanBloc>().add(EndScan());
-                    break;
-                }
-              }
-            },
-            child: Center(
-              child: state is ScanResult
-                  ? Text(
-                      state.scannedCode,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 22),
-                      textAlign: TextAlign.center,
-                    )
-                  : const Text(
-                      'Froza ATOL test:',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16),
-                    ),
-            ),
-          );
-        },
+        child: mainScreenWidget(),
       ),
     );
   }
 }
+
+Widget mainScreenWidget() {
+  return Center(
+    child: BlocBuilder<ScanBloc, ScanState>(
+      builder: (context, state) {
+        if (state is ScanResult) {
+          return Text(
+            state.scannedCode,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 22),
+            textAlign: TextAlign.center,
+          );
+        }
+        return const Text(
+          'Froza ATOL test:',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
+        );
+      },
+    ),
+  );
+}
+*/
