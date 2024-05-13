@@ -1,8 +1,8 @@
 import 'dart:async';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Events
 abstract class ScanEvent {}
@@ -29,7 +29,6 @@ class ScanResult extends ScanState {
 // Bloc
 class ScanBloc extends Bloc<ScanEvent, ScanState> {
   final BehaviorSubject<String> _subject = BehaviorSubject();
-  late final StreamSubscription _streamSubscription;
   final StringBuffer _chars = StringBuffer();
 
   ScanBloc() : super(ScanInitial()) {
@@ -39,34 +38,19 @@ class ScanBloc extends Bloc<ScanEvent, ScanState> {
           keyEvent.logicalKey.keyLabel.length == 1) {
         _chars.write(keyEvent.character ??
             keyEvent.logicalKey.keyLabel.characters.first);
-        _subject.add(_chars.toString());
       }
     });
 
-    on<StartScan>((event, emit) {
-      emit(ScanResult(_chars.toString()));
-      _chars.clear();
-    });
+    on<StartScan>((event, emit) {});
 
     on<EndScan>((event, emit) {
       emit(ScanResult(_chars.toString()));
       _chars.clear();
     });
-
-    _streamSubscription = _subject.stream
-        .debounceTime(const Duration(milliseconds: 10))
-        .listen((code) {
-      if (code == '404_PDA_SCAN_NOT_FOUND') {
-        // Handle not found case
-      } else {
-        add(StartScan());
-      }
-    });
   }
 
   @override
   Future<void> close() {
-    _streamSubscription.cancel();
     _subject.close();
     return super.close();
   }
@@ -104,22 +88,25 @@ class MainScreen extends StatelessWidget {
     focusNode.requestFocus();
 
     return Scaffold(
-        body: KeyboardListener(
-            focusNode: focusNode,
-            onKeyEvent: (KeyEvent event) {
-              context.read<ScanBloc>().add(KeyPressed(event));
-              if (event is KeyUpEvent) {
-                switch (event.logicalKey.keyLabel.toUpperCase()) {
-                  case 'F11':
-                    context.read<ScanBloc>().add(StartScan());
-                    break;
-                  case 'ENTER':
-                    context.read<ScanBloc>().add(EndScan());
-                    break;
-                }
-              }
-            },
-            child: mainScreenWidget()));
+      body: KeyboardListener(
+        focusNode: focusNode,
+        onKeyEvent: (KeyEvent event) {
+          if (event is KeyDownEvent) {
+            context.read<ScanBloc>().add(KeyPressed(event));
+          }
+          if (event is KeyUpEvent) {
+            switch (event.logicalKey.keyLabel.toUpperCase()) {
+              case 'F11': // This could be used for start scan, if needed
+                break;
+              case 'ENTER':
+                context.read<ScanBloc>().add(EndScan());
+                break;
+            }
+          }
+        },
+        child: mainScreenWidget(),
+      ),
+    );
   }
 }
 
